@@ -1,0 +1,24 @@
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+backend/bin/
+backend/dist/
+backend/vendor/
+backend/gen/
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env.local
+
+# Docker / Local Dev
+postgres_data/

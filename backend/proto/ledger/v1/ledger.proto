@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package ledger.v1;
+
+import "google/protobuf/timestamp.proto";
+import "common/v1/money.proto";
+
+option go_package = "github.com/nickprivalov/moneyscope/backend/gen/go/ledger/v1;ledgerv1";
+
+// --- Domain Messages ---
+
+enum TransactionType {
+  TRANSACTION_TYPE_UNSPECIFIED = 0;
+  TRANSACTION_TYPE_INCOME = 1;     // Salary, Refunds
+  TRANSACTION_TYPE_EXPENSE = 2;    // Groceries, Rent
+  TRANSACTION_TYPE_TRANSFER = 3;   // Moving money between accounts
+}
+
+message Transaction {
+  string id = 1;
+  string user_id = 2;
+  string account_id = 3;
+  google.protobuf.Timestamp date = 4;
+  common.v1.Money amount = 5;
+  string description = 6;
+  string category_id = 7;
+  TransactionType type = 8;
+  repeated string tags = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+// --- Service Definition ---
+
+service LedgerService {
+  rpc CreateTransaction(CreateTransactionRequest) returns (CreateTransactionResponse);
+  rpc CreateTransactionsBatch(CreateTransactionsBatchRequest) returns (CreateTransactionsBatchResponse);
+  rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
+  rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse);
+  rpc UpdateTransaction(UpdateTransactionRequest) returns (UpdateTransactionResponse);
+  rpc DeleteTransaction(DeleteTransactionRequest) returns (DeleteTransactionResponse);
+}
+
+// --- Request/Response DTOs ---
+
+message CreateTransactionRequest {
+  string user_id = 1;
+  string account_id = 2;
+  google.protobuf.Timestamp date = 3;
+  common.v1.Money amount = 4;
+  string description = 5;
+  string category_id = 6;
+  TransactionType type = 7;
+}
+
+message CreateTransactionResponse {
+  Transaction transaction = 1;
+}
+
+message CreateTransactionsBatchRequest {
+  repeated CreateTransactionRequest transactions = 1;
+}
+
+message CreateTransactionsBatchResponse {
+  int32 succeeded_count = 1;
+  int32 failed_count = 2;
+  repeated string failed_indices = 3;
+}
+
+message GetTransactionRequest {
+  string id = 1;
+  string user_id = 2;
+}
+
+message GetTransactionResponse {
+  Transaction transaction = 1;
+}
+
+message ListTransactionsRequest {
+  string user_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListTransactionsResponse {
+  repeated Transaction transactions = 1;
+  string next_page_token = 2;
+}
+
+message UpdateTransactionRequest {
+  Transaction transaction = 1;
+}
+
+message UpdateTransactionResponse {
+  Transaction transaction = 1;
+}
+
+message DeleteTransactionRequest {
+  string id = 1;
+  string user_id = 2;
+}
+
+message DeleteTransactionResponse {
+  bool success = 1;
+}
