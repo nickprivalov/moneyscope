@@ -1,5 +1,6 @@
 .PHONY: proto
 
+# Generates proto code
 proto:
 	@echo "Generating Go code from Protobufs..."
 	@mkdir -p backend/gen/go
