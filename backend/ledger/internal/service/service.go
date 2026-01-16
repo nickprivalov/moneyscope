@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -81,5 +82,53 @@ func (s *LedgerService) CreateTransaction(ctx context.Context, req *ledgerv1.Cre
 			CreatedAt:   timestamppb.New(txModel.CreatedAt),
 			UpdatedAt:   timestamppb.New(txModel.UpdatedAt),
 		},
+	}, nil
+}
+
+func (s *LedgerService) CreateTransactionsBatch(ctx context.Context, req *ledgerv1.CreateTransactionsBatchRequest) (*ledgerv1.CreateTransactionsBatchResponse, error) {
+	var succeeded int32
+	var failed int32
+	var failedIndices []string
+
+	// Basic transactional batch insert
+	// Note: For high performance, GORM has CreateInBatches, but map first.
+
+	// Start DB transaction
+	tx := s.db.Begin()
+
+	for i, r := range req.Transactions {
+		// Map (TODO function this)
+		newID := uuid.New().String()
+		txModel := models.Transaction{
+			ID:           newID,
+			UserID:       r.UserId,
+			AccountID:    r.AccountId,
+			Date:         r.Date.AsTime(),
+			CurrencyCode: r.Amount.CurrencyCode,
+			AmountUnits:  r.Amount.Units,
+			AmountNanos:  r.Amount.Nanos,
+			Description:  r.Description,
+			CategoryID:   r.CategoryId,
+			Type:         int32(r.Type),
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+
+		if err := tx.Create(&txModel).Error; err != nil {
+			failed++
+			failedIndices = append(failedIndices, fmt.Sprintf("%d", i))
+			// "best effort" but log failures.
+			//	TODO better handling
+		} else {
+			succeeded++
+		}
+	}
+
+	tx.Commit()
+
+	return &ledgerv1.CreateTransactionsBatchResponse{
+		SucceededCount: succeeded,
+		FailedCount:    failed,
+		FailedIndices:  failedIndices,
 	}, nil
 }
