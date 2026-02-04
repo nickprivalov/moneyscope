@@ -20,7 +20,8 @@ func main() {
 	log.SetOutput(os.Stdout)
 	log.Println("Starting Ledger Service...")
 
-	// 1. Config (Ideally load from env vars, hardcoded for now for MVP)
+	// TODO config-ify
+	// Config (Ideally load from env vars, hardcoded for now for MVP)
 	dbConfig := db.DbConfig{
 		Host:     "localhost", // Use "postgres" if running inside docker network
 		Port:     "5432",
