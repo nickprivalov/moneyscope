@@ -1,55 +1,67 @@
-# MoneyScope: Backend Architecture
+# MoneyScope Backend
 
 ---
 
-### Backend
+The backend operates in a quite **monolithic** way, but with great modularity for organization.
 
-#### Common (`backend/common`)
+The server (`backend/server`) creates and sets up the various service objects (`backend/db`, `backend/auth`, etc.).
+
+When needed, services may run functions and features in goroutines.
+
+### Main Server (`backend/server`)
+- Actual main runnable
+- Initializations, connections, etc.
+
+### Common (`backend/common`)
 - Shared code
-- Protobuf definitions
-- Go `struct` definitions
-- Database connectivity (incl. GORM)
+- Shared structs 
+  - JSON "translating" for these structs should occur here
+  - For structs in other services/modules, their "JSON translating" should occur with the struct's definition
 
-#### Authentication Service (`backend/auth`)
-- General authentication/identity/credentials handling
+### Database (`backend/db`)
+- Database-related functionalities
+- Connectivity
+- DAOs, entities
+
+### Authentication Service (`backend/auth`)
+- General authentication, identity and credentials management
 - Registration
-- Login/Logout
-- Token validation middleware for `Gateway` service
-- Handles operations for `Profile` service to manage actual user profile
+- Login, logout
+- Token validation middleware for all routes
 
-#### Profile Service (`backend/profile`)
-- Handles user's profile and personal settings (post-auth)
+### Profile Service (`backend/profile`)
+- User's profile
+- Settings and preferences management
 
-#### Gateway Service (`backend/gateway`)
-- Gin, gRPC
-- Endpoint management
-    - Routes endpoints to appropriate services/functions
+### Gateway Service (`backend/gateway`)
+- Endpoint routing
 - CORS management
-- File streaming proxy for `Ingest` (HTTP file stream piped directly into gRPC client stream)
-- Translate JSON to structs
-- **[Idea]:** batch responses from across services into response for frontend
+- File streaming proxy for `Ingest` service
+- Can batch function responses from other services into JSON responses for frontend
 
-#### Ingest Service (`backend/ingest`)
-- gRPC
-- Processing file uploads and "translating" them into appropriate data structures
-- Reads file stream, turns line items into `Transaction` objects, batches them to be sent to `Ledger` service
-- Passes "cleaned" data to `Ledger`
-- (best-guess try?) categorize incoming transactions
-- **[Idea]:** options for (on upload) tweaking the CSV-to-upload's format (e.g. ignore first _n_ rows, etc.)
+### Ingest Service (`backend/ingest`)
+- Handles file uploading and "translating" them into respective data structures
+- Passes data to `Ledger` service
+- Can take configuration options for CSV uploading
 
-#### Ledger Service (`backend/ledger`)
-- gRPC, GORM
-- "Source of truth" for account, balances, transactions, etc.
-- Performs CRUD operations for database
-    - transaction history en masse (including pagination, filtering, searching, etc.)
-    - modifying transactions post-upload
-    - manage accounts, savings buckets, debts (secured and unsecured)
-- Ensures financial data consistency/correctness/integrity
+### Ledger Service (`backend/ledger`)
+- "Source of truth" for accounts, balances, transactions, debts, etc.
+- Performs CRUD operations on database
+  - Accounts
+    - Bank accounts (checking, savings)
+    - Health Savings Accounts (HSAs)
+    - Retirement Accounts (401K, Roth IRAs)
+    - Investment/Trading Accounts
+    - Debts (secured/unsecured)
+  - Budgets
+    - Buckets within accounts
+    - Savings goals
+    - Payoff plans
+  - Transactions
+  - Spending categories
+  - etc.
 
-#### Analytics Service (`backend/analytics`)
-- _Unknown what other tech may be used; potentially AI plugins/calls? (Gemini?)_
-- Provides analytics/insights on financial data
-- Performs CRUD operations for analytics (creating categories of spending, etc.)
-- Calculate spending patterns for front-end chart displays
-- Handling of budget tracking feature (create user-defined budget plans, savings buckets, etc.)
-    - Maybe `Ledger` responsibility?
+### Analytics Service (`backend/analytics`)
+- _This is a "maybe" service, consider the whole service to be an optional feature_
+- AI-powered analytics
+  - Everything that entails configuring it (API key, etc.)
