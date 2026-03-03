@@ -12,25 +12,27 @@ import (
 func main() {
 	common.InitLogger()
 
-	log.Info("Starting server...")
+	log.Info("Starting main server...")
 
 	// TODO env config this
 	dbConfig := db.DbConfig{
 		Host:     "localhost",
 		Port:     "5432",
-		Username: "postgres",
-		Password: "password",
-		Database: "moneyscope",
+		Username: "moneyscope_user",
+		Password: "moneyscope_password_1234",
+		Database: "moneyscope_db",
 		SSLMode:  "disable",
 	}
 
+	// DB connect
 	database, err := db.InitDb(dbConfig)
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		log.Fatalf("Failed to initialize database connection: %v", err)
 	}
 	defer database.Close()
 
 	// TODO move to router
+	// health check endpoint for testing/running purposes
 	http.HandleFunc("/dbhealth", func(w http.ResponseWriter, r *http.Request) {
 		if err := db.CheckHealth(database); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -40,16 +42,29 @@ func main() {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Ledger Service is alive!"))
+		w.Write([]byte("Main server is alive!"))
 	})
 
+	// TODO env config this
+	// get running port
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	log.WithField("port", port).Info("Ledger service running.")
+	// graceful shutdown handling
+	// NOTE unneeded with httpserve
+	//stopSignal := make(chan os.Signal, 1)
+	//signal.Notify(stopSignal, os.Interrupt, syscall.SIGTERM)
+
+	// serve HTTP
+	log.WithField("port", port).Info("Main server is now running.")
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
+
+	// shutdown detection
+	//<-stopSignal
+	//log.Info("Shutting down server...")
+
 }
